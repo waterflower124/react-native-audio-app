@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, Image, FlatList } from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, Image, FlatList, Alert } from 'react-native';
 import ParallaxScrollView from 'react-native-parallax-scroll-view';
 import Icon from 'react-native-vector-icons/Entypo'
 import { MusicVerticalComponent } from '../../components/music';
@@ -180,55 +180,115 @@ class PlaylistContainer extends Component {
             playlist: params.playlist
         })
 
-        this.setState({showIndicator: true});
-        await fetch(global.server_url + '/api/artist_songs/' + params.playlist.id, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': global.token
-            }
-        })
-        .then(response => response.json())
-        .then(async data => {
-            const error_code = data.error.code;
-            if(error_code == 401) {
-                Alert.alert("Waves!", 'Token error!');
-            } else if(error_code == 402) {
-                Alert.alert("Waves!", 'Your account is disabled!');
-            } else if(error_code == 200) {
-                var items = [];
-                
-                for(i = 0; i < data.data.songs.length; i ++) {
-                    var artist_name = "";
-                    if(data.data.name == null) {
-                        artist_name = "No Artist";
-                    } else {
-                        artist_name = data.data.name;
+        if(this.props.navigation.state.params.prev) {
+            if(this.props.navigation.state.params.prev == "userplaylist") {
+                this.setState({showIndicator: true});
+                await global.dbManager.getPlaylistSongs(params.playlist.id)
+                .then((values) => {
+                    var items = [];
+                    for(i = 0; i < values.length; i ++) {
+                        items.push({
+                            id: values[i].song_id,
+                            artist: values[i].artist,
+                            title: values[i].title,
+                            url: values[i].url,
+                            artwork: values[i].artwork,
+                            db_id: values[i].song_id,
+                            down_count: 0,
+                            price: 0,
+                            downloading: false,
+                            album_id: 0,
+                            artist_id: 0,
+                            playlist_id: values[i].playlist_id,
+                            purchase_status: true, // if user already purchase this song then true, else false
+                        });
                     }
-                    items.push({
-                        id: data.data.songs[i].id,
-                        artist: artist_name,
-                        title: data.data.songs[i].name,
-                        url: global.server_url + data.data.songs[i].audio,
-                        artwork: global.server_url + data.data.songs[i].img,
-                        db_id: data.data.songs[i].id,
-                    });
-                }
                     
-                this.setState({
-                    items: items,
+                    this.setState({
+                        items: items,
+                    }, () => this.setState({showIndicator: false}))
+                }).catch((error) => {
+                    this.setState({showIndicator: false});
                 })
-    
-            } else {
-                Alert.alert("Waves!", 'There is an error in server, Please try again.');
+                
             }
-        })
-        .catch(function(error) {
-            Alert.alert('Waves!', error.message);
-        });
+        } else {
+
+            this.setState({showIndicator: true});
+            await fetch(global.server_url + '/api/artist_songs/' + params.playlist.id, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': global.token
+                }
+            })
+            .then(response => response.json())
+            .then(async data => {
+                const error_code = data.error.code;
+                if(error_code == 401) {
+                    Alert.alert("Waves!", 'Token error!');
+                } else if(error_code == 402) {
+                    Alert.alert("Waves!", 'Your account is disabled!');
+                } else if(error_code == 200) {
+                    var items = [];
+                    
+                    for(i = 0; i < data.data.songs.length; i ++) {
+                        var artist_name = "";
+                        if(data.data.name == null) {
+                            artist_name = "No Artist";
+                        } else {
+                            artist_name = data.data.name;
+                        }
+                        var album_id = 0;
+                        if(data.data.songs[i].album != null) {
+                            album_id = data.data.songs[i].album.id;
+                        }
+                        var artist_id = 0;
+                        if(data.data.songs[i].artist != null) {
+                            artist_id = data.data.songs[i].artist.id;
+                        }
+                        var playlist_id = 0;
+                        if(data.data.songs[i].playlist != null) {
+                            playlist_id = data.data.songs[i].playlist.id;
+                        }
+                        var purchase_status = true;
+                        if(data.data.songs[i].price != 0) {
+                            if(data.data.songs[i].user_trans.length > 0) {
+                                purchase_status = false;
+                            }
+                        }
+                        items.push({
+                            id: data.data.songs[i].id,
+                            artist: artist_name,
+                            title: data.data.songs[i].name,
+                            url: global.server_url + data.data.songs[i].audio,
+                            artwork: global.server_url + data.data.songs[i].img,
+                            db_id: data.data.songs[i].id,
+                            down_count: data.data.songs[i].downCount,
+                            price: data.data.songs[i].price,
+                            downloading: false,
+                            album_id: album_id,
+                            artist_id: artist_id,
+                            playlist_id: playlist_id,
+                            purchase_status: purchase_status, // if user already purchase this song then true, else false
+                        });
+                    }
+                        
+                    this.setState({
+                        items: items,
+                    })
         
-        this.setState({showIndicator: false});
+                } else {
+                    Alert.alert("Waves!", 'There is an error in server, Please try again.');
+                }
+            })
+            .catch(function(error) {
+                Alert.alert('Waves!', error.message);
+            });
+            
+            this.setState({showIndicator: false});
+        }
     }
 
     init_func = async() => {
@@ -266,6 +326,9 @@ class PlaylistContainer extends Component {
     }
 
     onPressOption = async item => {
+        if(this.state.items.length == 0) {
+            return;
+        }
         if(item.name == "Play") {
             if(!this.state.options[0].active) {
                 await TrackPlayer.reset();
@@ -329,12 +392,34 @@ class PlaylistContainer extends Component {
     }
 
     onPress = async item => {
+        if(!item.purchase_status) {
+            if(global.credit_status) {
+                Alert.alert("Waves", "You need to purchase " + item.price +"$ to play this song. Would you like to purchase?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: () => {
+                        purchase_song(item)
+                    }
+                    }
+                ],
+                { cancelable: true }
+                );
+                
+            } else {
+                Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+            }
+            return;
+        }
         await TrackPlayer.reset();
-
         var track_list = Object.assign([], this.state.items);
+        for(i = 0; i < track_list.length; i ++) {
+            if(!track_list[i].purchase_status) {
+                track_list.splice(i, 1);
+            }
+        }
         await TrackPlayer.add(track_list);
         await TrackPlayer.skip(String(item.id));
-        await TrackPlayer.play()
+        await TrackPlayer.play();
     }
 
     onHandlePlayer = async items => {

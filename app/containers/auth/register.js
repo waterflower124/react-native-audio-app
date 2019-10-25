@@ -25,6 +25,8 @@ import { countries_list } from '../../global/countries_list';
 import { STYLES, COLORS, FONTS} from '../../themes';
 
 import global from '../../global/global';
+import PhoneInput from "../../components/phone-input";
+import RNPickerSelect from 'react-native-picker-select';
 
 var deviceWidth = Dimensions.get('window').width;
 var deviceHeight = Dimensions.get('window').height;
@@ -34,10 +36,25 @@ var safearea_height = deviceHeight - top_inset - bottom_inset;
 YellowBox.ignoreWarnings(["Warning:"]);
 YellowBox.ignoreWarnings(["`-[RCTRootView cancelTouches]`"]);
 
+const sports = [
+    {
+      label: 'Football',
+      value: 'football',
+    },
+    {
+      label: 'Baseball',
+      value: 'baseball',
+    },
+    {
+      label: 'Hockey',
+      value: 'hockey',
+    },
+  ];
+
 const options = {
     title: 'Select avtar...',
     // customButtons: [{ name: 'fb', title: 'Choose Photo from Facebook' }],
-    takePhotoButtonTitle: 'Select from camera',
+    takePhotoButtonTitle: 'Select from Camera',
     chooseFromLibraryButtonTitle: 'Select from Library',
     storageOptions: {
         skipBackup: true,
@@ -75,7 +92,8 @@ export default class RegisterContainer extends Component {
 
             gender_view_show: false,
 
-            show_country_modal: false,
+            show_verification_modal: false,
+            verification_code: ''
 
           
 		}
@@ -129,33 +147,77 @@ export default class RegisterContainer extends Component {
         })
     }
 
-    signup = async() => {
+    get_verficigation_code = async() => {
         Keyboard.dismiss();
         let regExpression = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/ ;
         if(regExpression.test(this.state.email) === false) {
-            Alert.alert("Warning!", 'Please use valid Email address.');
+            Alert.alert("Waves!", 'Please use valid Email address.');
             return;
         };
         if(this.state.password.length < 6) {
-            Alert.alert("Warning!", "Password have to be at least 6 characters");
+            Alert.alert("Waves!", "Password have to be at least 6 characters");
             return;
         }
         if(this.state.password != this.state.confirm_password) {
-            Alert.alert("Warning!", "Please confirm password.");
+            Alert.alert("Waves!", "Please confirm password.");
             return;
         }
         if(this.state.display_name == "") {
-            Alert.alert("Warning!", "Please input display name.");
+            Alert.alert("Waves!", "Please input display name.");
             return;
         }
-        if(this.state.country == "") {
-            Alert.alert("Warning!", "Please select country.");
+        if(!this.phone.isValidNumber()) {
+            Alert.alert("Waves!", "Please input valid phone number.");
+            return;
+        }
+        if(this.state.country == null || this.state.country == "") {
+            Alert.alert("Waves!", "Please select country.");
             return;
         }
         if(this.state.birthday == "") {
-            Alert.alert("Warning!", "Please input your birthday.");
+            Alert.alert("Waves!", "Please input your birthday.");
             return;
         }
+
+        this.setState({showIndicator: true});
+        await fetch(global.server_url + '/api/auth/getVerification', {
+            method: 'POST',
+            headers: {
+                // 'Accept': 'application/json',
+                'Content-Type': 'application/json',
+
+            },
+            body: JSON.stringify({
+                email: this.state.email
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            const error_code = data.error.code;
+            if(error_code == 200) {
+                this.setState({
+                    show_verification_modal: true
+                })
+            } else {
+                if(error_code == 602) {
+                    Alert.alert("Waves!", "Verification code send fail. Please try again.");
+                } else {
+                    Alert.alert("Waves!", "There is an error in server. Please try again");
+                }
+            }
+        })
+        .catch(function(error) {
+            Alert.alert('Waves!', 'Network error.');
+        })
+        this.setState({showIndicator: false});
+    }
+
+    signup = async() => {
+        Keyboard.dismiss();
+        this.setState({
+            show_verification_modal: false
+        })
 
         var formData = new FormData();
         if(this.state.avatar_url !== '') {
@@ -179,6 +241,9 @@ export default class RegisterContainer extends Component {
         formData.append('country', this.state.country);
         formData.append('gender', this.state.gender);
         formData.append('dob', this.state.birthday);
+        formData.append('vcode', this.state.verification_code);
+        formData.append('phone', this.phone.getValue());
+        console.log(this.phone.getValue() + "sdfsdf")
 
         this.setState({showIndicator: true});
         await fetch(global.server_url + '/api/auth/register', {
@@ -192,20 +257,51 @@ export default class RegisterContainer extends Component {
         })
         .then(response => response.json())
         .then(data => {
+            console.log(data)
             const error_code = data.error.code;
             if(error_code == 200) {
+                this.setState({
+                    email: '',
+                    password: '',
+                    confirm_password: '',
+                    gender: 'Male',
+                    birthday: '',
+                    country: '',
+                    display_name: '',
+                    verification_code: '',
+
+                    show_verification_modal: false
+
+                })
                 Alert.alert("Waves!", "Register Successfully.",
                 [
                     {text: 'Cancel', onPress: null},
-                    {text: 'OK', onPress: () => this.props.navigation.navigate('Signin')}
+                    {text: 'OK', onPress: () => this.props.navigation.navigate('Login')}
                 ],
                 { cancelable: true }
                 )
             } else {
-                if(error_code == 407) {
-                    Alert.alert("Waves!", "Email is already exist. Please use other email address.");
+                if(error_code == 404) {
+                    Alert.alert("Waves!", "Email is already exist. Please use other email address.",
+                    [
+                        {text: 'OK', onPress: () => this.setState({show_verification_modal: true})}
+                    ],
+                    { cancelable: true }
+                    );
+                } else if(error_code == 407) {
+                    Alert.alert("Waves!", "Verification Code doesn't match. Please input verification code again.",
+                    [
+                        {text: 'OK', onPress: () => this.setState({show_verification_modal: true})}
+                    ],
+                    { cancelable: true }
+                    );
                 } else {
-                    Alert.alert("Waves!", "There is an error in server. Please try again");
+                    Alert.alert("Waves!", "There is an error in server. Please try again",
+                    [
+                        {text: 'OK', onPress: () => this.setState({show_verification_modal: true})}
+                    ],
+                    { cancelable: true }
+                    );
                 }
             }
         })
@@ -227,26 +323,34 @@ export default class RegisterContainer extends Component {
                         </View>
                     </View>
                 }
-                {
+                {/* {
                     this.state.show_country_modal &&
                     <View style = {{position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'black', opacity: 0.3, zIndex: 100}}/>
-                }
+                } */}
                 {
-                    this.state.show_country_modal &&
+                    this.state.show_verification_modal &&
                     <View style = {{position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 100}}>
-                        <View style = {{width: '90%', height: '80%', backgroundColor: '#343889', padding: 10, borderRadius: 5}}>
-                            <TouchableOpacity style = {{position: 'absolute', right: 5, top: 5, width: 40, height: 40, zIndex: 10}} onPress = {() => this.setState({show_country_modal: false})}>
-                                <Image style = {{height: '100%', width: '100%'}} resizeMode = {'contain'} source = {require('../../images/modal_cancel.png')}/>
-                            </TouchableOpacity>
-                            <ScrollView style = {{width: '100%'}} showsVerticalScrollIndicator = {false}>
-                            {
-                                countries_list.map((item, index) => 
-                                <TouchableOpacity key = {index} style = {{width: '80%', height: 40, justifyContent: 'center'}} onPress = {() => this.setState({country: item.name, show_country_modal: false})}>
-                                    <Text style = {{fontSize: 16, color: '#ffffff', marginLeft: 5, fontFamily: FONTS.type.Regular}}>{item.name}</Text>
+                        <View style = {{width: '80%', height: 200, backgroundColor: '#303030', borderRadius: 5}}>
+                            <View style = {{width: '100%', height: '30%', alignItems: 'center', justifyContent: 'center'}}>
+                                <Text style = {{color: COLORS.text.white, fontSize: 18, fontFamily: FONTS.type.Medium,}}>Verification Code</Text>
+                            </View>
+                            <View style = {{width: '100%', height: '30%', alignItems: 'center', justifyContent: 'center'}}>
+                                <TextInput style = {{width: '80%', height: 40, fontSize: 15, color: '#ffffff', backgroundColor: '#222222', paddingLeft: 5, borderRadius: 5, fontFamily: FONTS.type.Regular}} 
+                                    placeholder = {'Verification Code'}
+                                    placeholderTextColor = {'#808080'}
+                                    keyboardType = {"number-pad"}
+                                    onChangeText = {(text) => this.setState({verification_code: text})}>
+                                    {this.state.verification_code}
+                                </TextInput>
+                            </View>
+                            <View style = {{width: '100%', height: '40%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+                                <TouchableOpacity style = {{width: '40%', height: 40, borderRadius: 5, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center', marginRight: 10}} onPress = {() => this.setState({show_verification_modal: false})}>
+                                    <Text style = {{color: COLORS.text.black, fontSize: 18, fontFamily: FONTS.type.Medium,}}>Cancel</Text>
                                 </TouchableOpacity>
-                                )
-                            }
-                            </ScrollView>
+                                <TouchableOpacity style = {{width: '40%', height: 40, borderRadius: 5, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center'}} onPress = {() => this.signup()}>
+                                    <Text style = {{color: COLORS.text.black, fontSize: 18, fontFamily: FONTS.type.Medium,}}>Send</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 }
@@ -307,12 +411,45 @@ export default class RegisterContainer extends Component {
                                 </View>
                                 <View style = {styles.input_component}>
                                     <View style = {styles.input_comment}>
+                                        <Text style = {styles.comment_text}>Phone Number</Text>
+                                    </View>
+                                    <View style = {[styles.input_text_view, {borderRadius: 5, backgroundColor: '#222222', paddingLeft: 5}]}>
+                                        <PhoneInput
+                                            ref={ref => {
+                                                this.phone = ref;
+                                            }}
+                                            autoFormat = {true}
+                                            textStyle = {{color: '#ffffff'}}
+                                        />
+                                    </View>
+                                </View>
+                                <View style = {styles.input_component}>
+                                    <View style = {styles.input_comment}>
                                         <Text style = {styles.comment_text}>Country</Text>
                                     </View>
-                                    <TouchableOpacity style = {[styles.input_text_view, {borderRadius: 5, backgroundColor: '#222222'}]} onPress = {() => this.setState({show_country_modal: true})}>
+                                    {/* <TouchableOpacity style = {[styles.input_text_view, {borderRadius: 5, backgroundColor: '#222222'}]} onPress = {() => this.setState({show_country_modal: true})}>
                                         <Text style = {{fontSize: 16, color: '#ffffff', marginLeft: 5, fontFamily: FONTS.type.Regular}}>{this.state.country}</Text>
-                                    </TouchableOpacity>
-                                </View><View style = {styles.input_component}>
+                                    </TouchableOpacity> */}
+                                    <View style = {[styles.input_text_view, {borderRadius: 5, backgroundColor: '#222222', paddingLeft: 5}]}>
+                                        <RNPickerSelect
+                                            placeholder={ {
+                                                label: 'Select a Country...',
+                                                value: null,
+                                                color: '#9EA0A4',
+                                            }}
+                                            items={countries_list}
+                                            onValueChange={value => {
+                                                this.setState({country: value})
+                                            }}
+                                            style={{width: '100%', height: '100%'}}
+                                            textInputProps = {{color: '#ffffff'}}
+                                            // InputAccessoryView={() => null}
+                                            // style={pickerSelectStyles}
+                                            // value={this.state.favSport2}
+                                        />
+                                    </View>
+                                </View>
+                                <View style = {styles.input_component}>
                                     <View style = {styles.input_comment}>
                                         <Text style = {styles.comment_text}>Gender</Text>
                                     </View>
@@ -346,7 +483,7 @@ export default class RegisterContainer extends Component {
                             </KeyboardAwareScrollView>
                         </View>
                         
-                        <TouchableOpacity style = {{width: '100%', height: 40, marginTop: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 5}} onPress = {() => this.signup()}>
+                        <TouchableOpacity style = {{width: '100%', height: 40, marginTop: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 5}} onPress = {() => this.get_verficigation_code()}>
                             <Text style = {{fontSize: 20, color: '#000000', fontFamily: FONTS.type.Bold}}>SignUp</Text>
                         </TouchableOpacity>
                         <View style = {{width: '100%', height: 40, marginBottom: 10, justifyContent: 'center', alignItems: 'center', flexDirection: 'row'}}>

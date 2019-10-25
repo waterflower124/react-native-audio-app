@@ -11,6 +11,8 @@ import TrackPlayer, {STATE_PLAYING, STATE_PAUSED, STATE_BUFFERING, STATE_NONE, S
 import global from '../../global/global';
 import { SkypeIndicator } from 'react-native-indicators';
 
+const RNFS = require('react-native-fs');
+
 const VIEWABILITY_CONFIG = {
     minimumViewTime: 3000,
     viewAreaCoveragePercentThreshold: 95,
@@ -107,7 +109,7 @@ class MusicContainer extends Component {
             } else if(error_code == 402) {
                 Alert.alert("Waves!", 'Your account is disabled!');
             } else if(error_code == 200) {
-                
+            
                 var items = [];
                 
                 for(i = 0; i < data.data.length; i ++) {
@@ -117,6 +119,24 @@ class MusicContainer extends Component {
                     } else {
                         artist_name = data.data[i].artist.name;
                     }
+                    var album_id = 0;
+                    if(data.data[i].album != null) {
+                        album_id = data.data[i].album.id;
+                    }
+                    var artist_id = 0;
+                    if(data.data[i].artist != null) {
+                        artist_id = data.data[i].artist.id;
+                    }
+                    var playlist_id = 0;
+                    if(data.data[i].playlist != null) {
+                        playlist_id = data.data[i].playlist.id;
+                    }
+                    var purchase_status = true;
+                    if(data.data[i].price != 0) {
+                        if(data.data[i].user_trans.length > 0) {
+                            purchase_status = false;
+                        }
+                    }
                     items.push({
                         id: data.data[i].id,
                         artist: artist_name,
@@ -124,6 +144,12 @@ class MusicContainer extends Component {
                         url: global.server_url + data.data[i].audio,
                         artwork: global.server_url + data.data[i].img,
                         db_id: data.data[i].id,
+                        price: 0,
+                        downloading: false,
+                        album_id: album_id,
+                        artist_id: artist_id,
+                        playlist_id: playlist_id,
+                        purchase_status: purchase_status, // if user already purchase this song then true, else false
                     });
                 }
                     
@@ -233,12 +259,114 @@ class MusicContainer extends Component {
     }
 
     onPress = async item => {
+        if(!item.purchase_status) {
+            if(global.credit_status) {
+                Alert.alert("Waves", "You need to purchase " + item.price +"$ to play this song. Would you like to purchase?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: () => {
+                        purchase_song(item)
+                    }
+                    }
+                ],
+                { cancelable: true }
+                );
+                
+            } else {
+                Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+            }
+            return;
+        }
         await TrackPlayer.reset();
 
         var track_list = Object.assign([], this.state.items);
+        for(i = 0; i < track_list.length; i ++) {
+            if(!track_list[i].purchase_status) {
+                track_list.splice(i, 1);
+            }
+        }
         await TrackPlayer.add(track_list);
         await TrackPlayer.skip(String(item.id));
         await TrackPlayer.play()
+    }
+
+    onPressDownload = async(item) => {
+        if(item.purchase_status) {
+            this.download_file(item);
+        } else {
+            if(global.credit_status) {
+                Alert.alert("Waves.", "You need to purchase " + item.price +"$ to download this song. Would you like to purchase?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: () => purchase_song(item)}
+                ],
+                { cancelable: true }
+                )
+            } else {
+                Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+            }
+        }
+    }
+
+    async download_file(track_item) {
+
+        let audio_filename = track_item.url.split('/').pop();
+        let pic_filename = track_item.artwork.split('/').pop();
+        const downloadDest_audio = `${RNFS.CachesDirectoryPath}/${global.audio_dir}/${audio_filename}`;
+        const downloadDest_pic = `${RNFS.CachesDirectoryPath}/${global.picture_dir}/${pic_filename}`;
+    
+        const progress = data => {
+            const percentage = ((100 * data.bytesWritten) / data.contentLength) | 0;
+            console.log(`Progress  ${percentage}% `)
+        };
+    
+        const begin = res => {
+        
+        };
+    
+        const progressDivider = 1;
+        const background = false;
+
+        var items = Object.assign([], this.state.items);
+        for(index = 0; index < items.length; index ++) {
+            if(items[index].id == track_item.id) {
+                items[index].downloading = true;
+            }
+        }
+
+        this.setState({ items: items })
+    
+        //////////  download audio file  /////////
+        let ret_audio = RNFS.downloadFile({ fromUrl: track_item.url, toFile: downloadDest_audio, begin, progress, background, progressDivider });
+        await ret_audio.promise.then(res => {
+            console.log("file://" + downloadDest_audio)
+        }).catch(err => {
+            
+        });
+        //////////  download image file  /////////
+        let ret_picture = RNFS.downloadFile({ fromUrl: track_item.artwork, toFile: downloadDest_pic, begin, progress, background, progressDivider });
+        await ret_picture.promise.then(res => {
+            console.log("file://" + downloadDest_pic)
+        }).catch(err => {
+            
+        });
+
+        items = Object.assign([], this.state.items);
+        for(index = 0; index < items.length; index ++) {
+            if(items[index].id == track_item.id) {
+                items[index].downloading = false;
+            }
+        }
+ 
+        this.setState({ items: items })
+
+        ///////  add song to sqlite  ////////
+        global.dbManager.addSongToTable(track_item.title, track_item.artist, downloadDest_audio, downloadDest_pic, track_item.db_id)
+        .then((value) => {
+            console.log("add song to sql is successed")
+        }).catch((error) => {
+            console.log("add song to sql is failed")
+        })
     }
 
     onPressOption = async item => {
@@ -397,18 +525,19 @@ class MusicContainer extends Component {
                                 lastIndex={items.length - 1}
                                 item={item}
                                 onPress={this.onPress}
+                                onPressDownload = {this.onPressDownload}
                             />
                         )}
                     />
                 </ScrollView>
-              <MinPlayerComponent 
-                onPress={this.onHandlePlayer}
-                music_playing = {this.state.music_playing}
-                track_title = {this.state.track_title}
-                track_artist = {this.state.track_artist}
-                track_artwork = {this.state.track_artwork}
-                music_play_button_func = {() => this.music_play_button_func()}
-                music_next_button_func = {() => this.music_next_button_func()}/>
+                <MinPlayerComponent 
+                    onPress={this.onHandlePlayer}
+                    music_playing = {this.state.music_playing}
+                    track_title = {this.state.track_title}
+                    track_artist = {this.state.track_artist}
+                    track_artwork = {this.state.track_artwork}
+                    music_play_button_func = {() => this.music_play_button_func()}
+                    music_next_button_func = {() => this.music_next_button_func()}/>
             </SafeAreaView>
         );
     }

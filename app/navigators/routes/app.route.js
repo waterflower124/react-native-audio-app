@@ -4,9 +4,11 @@ import {createStackNavigator} from "react-navigation-stack"
 import { createBottomTabNavigator } from 'react-navigation-tabs';
 import Icon from 'react-native-vector-icons/Feather'
 import { COLORS, FONTS} from '../../themes'
-import { RadioStack, LibraryStack, SearchStack, SettingStack, TrendingStack } from './cards'
+import { RadioStack, LibraryStack, SearchStack, SettingStack, TrendingStack, UserPlayListStack } from './cards'
 import { SortModalContainer } from '../../containers/library'
 import PlayerContainer from '../../containers/player/PlayerContainer'
+import PlaylistListContainer from '../../containers/playlists/PlaylistListContainer'
+import MusicContainer from '../../containers/music/MusicContainer'
 
 import SplashContainer from '../../containers/splash'
 import LoginContainer from '../../containers/auth/login'
@@ -78,6 +80,17 @@ const AppStack = props = createBottomTabNavigator({
         //     }),
         //     tabBarVisible: false
         // },
+        PlayList: {
+            screen: UserPlayListStack,
+            path: 'userplaylist',
+            navigationOptions: ({ navigation }) => ({
+                tabBarIcon: ({ tintColor }) => (
+                    <Icon name="list" size={24} color={tintColor} />
+                ),
+                tabBarOnPress: () => tabBarOnPress(navigation)
+            }),
+            tabBarVisible: false
+        },
         Search: {
             screen: SearchStack,
             path: 'search',

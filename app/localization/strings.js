@@ -19,6 +19,7 @@ const strings = new LocalizedStrings({
         radio: "Radio",
         settings: "Settings",
         search: "Search",
+        userplaylist: 'User PlayList',
         trending: "Trending",
         recently_added:"Recently Added",
         recently_played: "Recently Played",
@@ -32,7 +33,9 @@ const strings = new LocalizedStrings({
         albums:"Albums",
         most_played:"Most Played",
         popular_albums:"Popular Albums",
-        the_best_playlists:"The Best Playlists",
+        the_best_playlists:"The Best PlayLists",
+        the_user_playlists: "Your PlayLists",
+        the_songs: "Downloaded Songs",
         see_all: "SEE ALL",
         alert: {
             welcome_back: 'Welcome back!',
@@ -56,7 +59,11 @@ const strings = new LocalizedStrings({
         now_playing:"Now Playing",
         now_pause: "Now Pause",
         now_stop: "Now Stop",
-        a_collection_of_all_music_recommended_just_for_you_we_hope_you_like_it:"A collection of All Music Recommended just for you. We hope you Like It!"
+        a_collection_of_all_music_recommended_just_for_you_we_hope_you_like_it:"A collection of All Music Recommended just for you. We hope you Like It!",
+
+        create_playlist: "Create New PlayList",
+        new_playlistname: "Title",
+        add_song_to_playlist: "Add Song to PlayList"
    
     }
 })

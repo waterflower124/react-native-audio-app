@@ -33,7 +33,7 @@ class CheckConnection extends Component {
         };
     }
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         NetInfo.getConnectionInfo().then(connectionInfo => {
             this.CheckConnection(connectionInfo);
         });

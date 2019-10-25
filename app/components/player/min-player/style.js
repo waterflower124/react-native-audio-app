@@ -11,7 +11,8 @@ const styles = {
         borderRadius: 15,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.backgroundColor
+        // backgroundColor: COLORS.backgroundColor,
+        backgroundColor: '#1a1a1a'
     },
     actions:{
         flex: 1,

@@ -145,7 +145,6 @@ class AlbumListContainer extends Component {
     }
 
     init_func = async() => {
-
         let playing_state = await TrackPlayer.getState();
         if(playing_state != STATE_PLAYING) {
             this.setState({

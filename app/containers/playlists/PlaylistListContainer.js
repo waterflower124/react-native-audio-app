@@ -35,6 +35,7 @@ class PlaylistListContainer extends Component {
 
     constructor(props) {
         super(props);
+
         this.state = {
             showIndicator: false,
             music_playing: false,
@@ -129,48 +130,74 @@ class PlaylistListContainer extends Component {
     }
 
     async UNSAFE_componentWillMount() {
-
-        this.setState({showIndicator: true});
-        await fetch(global.server_url + '/api/playlists', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': global.token
-            }
-        })
-        .then(response => response.json())
-        .then(async data => {
-            const error_code = data.error.code;
-            if(error_code == 401) {
-                Alert.alert("Waves!", 'Token error!');
-            } else if(error_code == 402) {
-                Alert.alert("Waves!", 'Your account is disabled!');
-            } else if(error_code == 200) {
-                var items = [];
-                
-                for(i = 0; i < data.data.length; i ++) {
-                    items.push({
-                        id: data.data[i].id,
-                        name: data.data[i].name,
-                        picture: global.server_url + data.data[i].img,
-                    });
-                }
+        if(this.props.navigation.state.params.prev) {
+            if(this.props.navigation.state.params.prev == "userplaylist") {
+                this.setState({showIndicator: true});
+                await global.dbManager.getAllPlaylists()
+                .then((values) => {
+                    var playlists = [];
+                    for(i = 0; i < values.length; i ++) {
+                        var playlist = {
+                            id: values[i].id,
+                            name: values[i].title,
+                            picture: values[i].pic_path
+                        }
+                        playlists.push(playlist);
+                    }
                     
-                this.setState({
-                    items: items,
-                    global_items: items,
-                })
-    
-            } else {
-                Alert.alert("Waves!", 'There is an error in server, Please try again.');
-            }
-        })
-        .catch(function(error) {
-            Alert.alert('Waves!', error.message);
-        });
+                    this.setState({
+                        items: playlists,
+                        global_items: playlists
+                    })
+                }).catch((error) => {
         
-        this.setState({showIndicator: false});
+                })
+                this.setState({showIndicator: false});
+            }
+        } else {
+            this.setState({showIndicator: true});
+            await fetch(global.server_url + '/api/playlists', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': global.token
+                }
+            })
+            .then(response => response.json())
+            .then(async data => {
+                const error_code = data.error.code;
+                if(error_code == 401) {
+                    Alert.alert("Waves!", 'Token error!');
+                } else if(error_code == 402) {
+                    Alert.alert("Waves!", 'Your account is disabled!');
+                } else if(error_code == 200) {
+                    var items = [];
+                    
+                    for(i = 0; i < data.data.length; i ++) {
+                        items.push({
+                            id: data.data[i].id,
+                            name: data.data[i].name,
+                            picture: global.server_url + data.data[i].img,
+                        });
+                    }
+                        
+                    this.setState({
+                        items: items,
+                        global_items: items,
+                    })
+        
+                } else {
+                    Alert.alert("Waves!", 'There is an error in server, Please try again.');
+                }
+            })
+            .catch(function(error) {
+                Alert.alert('Waves!', error.message);
+            });
+            
+            this.setState({showIndicator: false});
+        }
+        
     }
 
     init_func = async() => {
@@ -212,7 +239,7 @@ class PlaylistListContainer extends Component {
 
     onPress = item =>{
         this.props.navigation.navigate('Playlist', {
-            playlist: item
+            playlist: item, prev: "userplaylist"
         })
     }
 

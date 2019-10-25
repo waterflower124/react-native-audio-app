@@ -10,6 +10,7 @@ import styles from './styles'
 import TrackPlayer, {STATE_PLAYING, STATE_PAUSED, STATE_BUFFERING, STATE_NONE, STATE_READY, STATE_STOPPED} from 'react-native-track-player';
 import global from '../../global/global';
 import { SkypeIndicator } from 'react-native-indicators';
+import AsyncStorage from '@react-native-community/async-storage';
 
 const renderSeparator = () => (
   <View style={[styles.seperatorBorderBottom]} />
@@ -251,7 +252,16 @@ class SettingsContainer extends Component {
             Alert.alert("Waves.", "Do you really want to logout?",
             [
                 {text: 'Cancel', onPress: null},
-                {text: 'OK', onPress: () => this.props.navigation.navigate('AuthStack')}
+                {text: 'OK', onPress: async() => {
+                    try {
+                        await AsyncStorage.setItem("signin", "false");
+                        await AsyncStorage.setItem("email", "");
+                        await AsyncStorage.setItem("password", "this.state.password");
+                    } catch(error) {
+                        console.log(error.message);
+                    }
+                    this.props.navigation.navigate('AuthStack')}
+                }
             ],
             { cancelable: true }
             )

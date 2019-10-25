@@ -4,7 +4,8 @@ const width = Dimensions.get('window').width
 
 const styles = {
     container: {
-        flex: 1
+        flex: 1,
+        
     },
     containerRow:{
         flexDirection: 'row',
@@ -20,7 +21,7 @@ const styles = {
         alignItems: 'stretch',
         justifyContent: 'center',
         iconDotDot: {
-            marginRight: 10,
+            marginRight: 20,
             color: COLORS.text.white,
         },
     },

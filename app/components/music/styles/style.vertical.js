@@ -23,7 +23,7 @@ const styles = {
         alignItems: 'stretch',
         justifyContent: 'center',
         iconDotDot: {
-            marginRight: 10,
+            marginRight: 20,
             color: COLORS.text.white,
         },
     },

@@ -17,6 +17,7 @@ import StaticSafeAreaInsets from 'react-native-static-safe-area-insets';
 
 import TrackPlayer from 'react-native-track-player';
 import global from '../../global/global';
+import { BaseManager } from '../../database'
 
 
 var deviceWidth = Dimensions.get('window').width;
@@ -44,6 +45,9 @@ export default class SplashContainer extends Component {
     }
     
     async UNSAFE_componentWillMount() {
+
+        global.dbManager = new BaseManager();
+
         // await TrackPlayer.setupPlayer();
         await TrackPlayer.setupPlayer().then(async() => {
             // await TrackPlayer.registerPlaybackService(() => require('../../player-service/service.js'));
@@ -96,7 +100,7 @@ export default class SplashContainer extends Component {
                         const error_code = data.error.code;
                         if(error_code == 402) {
                             Alert.alert("Waves!", 'Your account is disabled!');
-                        } else if(error_code == 404 && error_code == 405) {
+                        } else if(error_code == 404 || error_code == 405) {
                             Alert.alert("Waves!", 'Email or Password is incorrect!');
                         } else if(error_code == 200) {
                             global.email = email;
@@ -105,10 +109,21 @@ export default class SplashContainer extends Component {
                             global.country = data.data.country;
                             global.gender = data.data.gender;
                             global.birthday = data.data.dob;
-                            global.avatar_url = global.server_url + data.data.avatar_url;
+                            global.phone_number = data.data.phone;
+                            if(data.data.avatar_url == "") {
+                                global.avatar_url = "";
+                            } else {
+                                global.avatar_url = global.server_url + data.data.avatar_url;
+                            }
                             global.token = data.data.token;
-                            console.log(data.data.token)
-
+                            if(data.data.billings != null) {
+                                global.credit_status = true;
+                                global.card_number = data.data.billings.cardnum;
+                                global.credit_expiry = data.data.billings.expiredate;
+                                global.credit_cvc = data.data.billings.cvc;
+                            } else {
+                                global.credit_status = false;
+                            }
                             login = 1;
 
                         } else {

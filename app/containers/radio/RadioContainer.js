@@ -84,7 +84,7 @@ class RadioContainer extends Component {
         ]
       };
   }
-  componentWillMount() {
+  UNSAFE_componentWillMount() {
     const { popular_items } = this.state
     let arrayItems = [], size = 2;
     while (popular_items.length > 0) {

@@ -13,7 +13,10 @@ import { STYLES } from '../../themes'
 import style from './styles'
 import TrackPlayer, {STATE_PLAYING, STATE_PAUSED, STATE_BUFFERING, STATE_NONE, STATE_READY, STATE_STOPPED} from 'react-native-track-player';
 import global from '../../global/global';
+import { purchase_song } from '../../global/global_func';
 import { SkypeIndicator } from 'react-native-indicators';
+
+const RNFS = require('react-native-fs');
 
 const VIEWABILITY_CONFIG = {
   minimumViewTime: 3000,
@@ -143,13 +146,13 @@ class TrendingContainer extends Component {
         })
         .then(response => response.json())
         .then(async data => {
+            console.log(data.data.trending)
             const error_code = data.error.code;
             if(error_code == 401) {
                 Alert.alert("Waves!", 'Token error!');
             } else if(error_code == 402) {
                 Alert.alert("Waves!", 'Your account is disabled!');
             } else if(error_code == 200) {
-
                 
                 var items = [];
                 var trending = [];
@@ -164,6 +167,25 @@ class TrendingContainer extends Component {
                     } else {
                         artist_name = data.data.trending[i].artist_name;
                     }
+                    var album_id = 0;
+                    if(data.data.trending[i].album_id != null) {
+                        album_id = data.data.trending[i].album_id;
+                    }
+                    var artist_id = 0;
+                    if(data.data.trending[i].artist_id != null) {
+                        artist_id = data.data.trending[i].artist_id;
+                    }
+                    var playlist_id = 0;
+                    if(data.data.trending[i].playlist_id != null) {
+                        playlist_id = data.data.trending[i].playlist_id;
+                    }
+                    var purchase_status = true;
+                    if(data.data.trending[i].price != 0) {
+                        if(data.data.trending[i].user_trans != null) {
+                            purchase_status = false;
+                        }
+                    }
+
                     trending.push({
                         id: data.data.trending[i].id,
                         artist: artist_name,
@@ -171,7 +193,14 @@ class TrendingContainer extends Component {
                         url: global.server_url + data.data.trending[i].audio,
                         artwork: global.server_url + data.data.trending[i].img,
                         db_id: data.data.trending[i].id,
-                        down_count: data.data.trending[i].downCount
+                        down_count: data.data.trending[i].downCount,
+                        price: data.data.trending[i].price,
+                        downloading: false,
+                        album_id: album_id,
+                        artist_id: artist_id,
+                        playlist_id: playlist_id,
+                        purchase_status: purchase_status, // if user already purchase this song then true, else false
+                        
                     });
                 }
                 for(i = 0; i < data.data.artists.length; i ++) {
@@ -199,9 +228,8 @@ class TrendingContainer extends Component {
                 var items = Object.assign([], trending);
                 let arrayItems = [], size = 3;
                 while (items.length > 0){
-                arrayItems.push(items.splice(0, size));
+                    arrayItems.push(items.splice(0, size));
                 }
-                this.setState({ items: arrayItems })
 
                 this.setState({
                     items: arrayItems,
@@ -223,13 +251,129 @@ class TrendingContainer extends Component {
 
     }
 
-    onPress = async item => {
-        await TrackPlayer.reset();
+    onPressSong = async item => {
 
+        // await TrackPlayer.add(track_list);
+        ////  if this song is un-free, then return
+
+        if(!item.purchase_status) {
+            if(global.credit_status) {
+                Alert.alert("Waves", "You need to purchase " + item.price +"$ to play this song. Would you like to purchase?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: () => {
+                        purchase_song(item)
+                    }
+                    }
+                ],
+                { cancelable: true }
+                );
+                
+            } else {
+                Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+            }
+            return;
+        }
+        await TrackPlayer.reset();
         var track_list = Object.assign([], this.state.trending);
+        for(i = 0; i < track_list.length; i ++) {
+            if(!track_list[i].purchase_status) {
+                track_list.splice(i, 1);
+            }
+        }
         await TrackPlayer.add(track_list);
-        await TrackPlayer.skip(String(item.id));
+        for(i = 0; i < track_list.length; i ++) {
+            if(item.id == track_list[i].id) {
+                await TrackPlayer.skip(String(track_list[i].id));
+                break;
+            }
+        }
         await TrackPlayer.play()
+    }
+
+    onPressDownload = async(item) => {
+        if(item.purchase_status) {
+            this.download_file(item);
+        } else {
+            if(global.credit_status) {
+                Alert.alert("Waves.", "You need to purchase " + item.price +"$ to download this song. Would you like to purchase?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: () => purchase_song(item)}
+                ],
+                { cancelable: true }
+                )
+            } else {
+                Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+            }
+        }
+    }
+
+    async download_file(track_item) {
+
+        let audio_filename = track_item.url.split('/').pop();
+        let pic_filename = track_item.artwork.split('/').pop();
+        const downloadDest_audio = `${RNFS.CachesDirectoryPath}/${global.audio_dir}/${audio_filename}`;
+        const downloadDest_pic = `${RNFS.CachesDirectoryPath}/${global.picture_dir}/${pic_filename}`;
+    
+        const progress = data => {
+            const percentage = ((100 * data.bytesWritten) / data.contentLength) | 0;
+            console.log(`Progress  ${percentage}% `)
+        };
+    
+        const begin = res => {
+        
+        };
+    
+        const progressDivider = 1;
+        const background = false;
+
+        var items = Object.assign([], this.state.trending);
+        for(index = 0; index < items.length; index ++) {
+            if(items[index].id == track_item.id) {
+                items[index].downloading = true;
+            }
+        }
+        var arrayItems = [], size = 3;
+        while (items.length > 0){
+            arrayItems.push(items.splice(0, size));
+        }
+        this.setState({ items: arrayItems })
+    
+        //////////  download audio file  /////////
+        let ret_audio = RNFS.downloadFile({ fromUrl: track_item.url, toFile: downloadDest_audio, begin, progress, background, progressDivider });
+        await ret_audio.promise.then(res => {
+            console.log("file://" + downloadDest_audio)
+        }).catch(err => {
+            
+        });
+        //////////  download image file  /////////
+        let ret_picture = RNFS.downloadFile({ fromUrl: track_item.artwork, toFile: downloadDest_pic, begin, progress, background, progressDivider });
+        await ret_picture.promise.then(res => {
+            console.log("file://" + downloadDest_pic)
+        }).catch(err => {
+            
+        });
+
+        items = Object.assign([], this.state.trending);
+        for(index = 0; index < items.length; index ++) {
+            if(items[index].id == track_item.id) {
+                items[index].downloading = false;
+            }
+        }
+        arrayItems = [], size = 3;
+        while (items.length > 0){
+            arrayItems.push(items.splice(0, size));
+        }
+        this.setState({ items: arrayItems })
+
+        ///////  add song to sqlite  ////////
+        global.dbManager.addSongToTable(track_item.title, track_item.artist, downloadDest_audio, downloadDest_pic, track_item.db_id)
+        .then((value) => {
+            console.log("add song to sql is successed")
+        }).catch((error) => {
+            console.log("add song to sql is failed")
+        })
     }
 
     onPressGoToArtist = item => {
@@ -349,7 +493,8 @@ class TrendingContainer extends Component {
                     index={index}
                     lastIndex={items.length - 1}
                     item={item}
-                    onPress={this.onPress}
+                    onPress={this.onPressSong}
+                    onPressDownload = {this.onPressDownload}
                   />
                 )}
               />

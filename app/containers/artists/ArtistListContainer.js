@@ -119,8 +119,8 @@ class ArtistListContainer extends Component {
             } else if(error_code == 402) {
                 Alert.alert("Waves!", 'Your account is disabled!');
             } else if(error_code == 200) {
-                var items = [];
                 
+                var items = [];
                 for(i = 0; i < data.data.length; i ++) {
                     items.push({
                         id: data.data[i].id,
@@ -146,7 +146,6 @@ class ArtistListContainer extends Component {
     }
 
     init_func = async() => {
-
         let playing_state = await TrackPlayer.getState();
         if(playing_state != STATE_PLAYING) {
             this.setState({

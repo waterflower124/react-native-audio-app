@@ -136,13 +136,30 @@ class ArtistContainer extends Component {
                 Alert.alert("Waves!", 'Your account is disabled!');
             } else if(error_code == 200) {
                 var items = [];
-                
                 for(i = 0; i < data.data.songs.length; i ++) {
                     var artist_name = "";
                     if(data.data.name == null) {
                         artist_name = "No Artist";
                     } else {
                         artist_name = data.data.name;
+                    }
+                    var album_id = 0;
+                    if(data.data.songs[i].album != null) {
+                        album_id = data.data.songs[i].album.id;
+                    }
+                    var artist_id = 0;
+                    if(data.data.songs[i].artist != null) {
+                        artist_id = data.data.songs[i].artist.id;
+                    }
+                    var playlist_id = 0;
+                    if(data.data.songs[i].playlist != null) {
+                        playlist_id = data.data.songs[i].playlist.id;
+                    }
+                    var purchase_status = true;
+                    if(data.data.songs[i].price != 0) {
+                        if(data.data.songs[i].user_trans.length > 0) {
+                            purchase_status = false;
+                        }
                     }
                     items.push({
                         id: data.data.songs[i].id,
@@ -151,6 +168,13 @@ class ArtistContainer extends Component {
                         url: global.server_url + data.data.songs[i].audio,
                         artwork: global.server_url + data.data.songs[i].img,
                         db_id: data.data.songs[i].id,
+                        down_count: data.data.songs[i].downCount,
+                        price: data.data.songs[i].price,
+                        downloading: false,
+                        album_id: album_id,
+                        artist_id: artist_id,
+                        playlist_id: playlist_id,
+                        purchase_status: purchase_status, // if user already purchase this song then true, else false
                     });
                 }
                     
@@ -267,9 +291,31 @@ class ArtistContainer extends Component {
     }
 
     onPress = async item => {
+        if(!item.purchase_status) {
+            if(global.credit_status) {
+                Alert.alert("Waves", "You need to purchase " + item.price +"$ to play this song. Would you like to purchase?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: () => {
+                        purchase_song(item)
+                    }
+                    }
+                ],
+                { cancelable: true }
+                );
+                
+            } else {
+                Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+            }
+            return;
+        }
         await TrackPlayer.reset();
-
         var track_list = Object.assign([], this.state.items);
+        for(i = 0; i < track_list.length; i ++) {
+            if(!track_list[i].purchase_status) {
+                track_list.splice(i, 1);
+            }
+        }
         await TrackPlayer.add(track_list);
         await TrackPlayer.skip(String(item.id));
         await TrackPlayer.play()

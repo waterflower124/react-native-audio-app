@@ -140,12 +140,13 @@ class SearchContainer extends Component {
     }
 
     async UNSAFE_componentWillMount() {
-        console.log("111111")
-        this.get_search_result("all__data");
+        this.setState({showIndicator: true});
+        await this.get_search_result("all__data");
+        this.setState({showIndicator: false});
     }
 
     get_search_result = async(search_word) => {
-        this.setState({showIndicator: true});
+        
         await fetch(global.server_url + '/api/search/' + search_word, {
             method: 'GET',
             headers: {
@@ -174,6 +175,24 @@ class SearchContainer extends Component {
                     } else {
                         artist_name = data.data.songs[i].artist_name;
                     }
+                    var album_id = 0;
+                    if(data.data.songs[i].album_id != null) {
+                        album_id = data.data.songs[i].album_id;
+                    }
+                    var artist_id = 0;
+                    if(data.data.songs[i].artist_id != null) {
+                        artist_id = data.data.songs[i].artist_id;
+                    }
+                    var playlist_id = 0;
+                    if(data.data.songs[i].playlist_id != null) {
+                        playlist_id = data.data.songs[i].playlist_id;
+                    }
+                    var purchase_status = true;
+                    if(data.data.songs[i].price != 0) {
+                        if(data.data.songs[i].user_trans != null) {
+                            purchase_status = false;
+                        }
+                    }
                     songs.push({
                         id: data.data.songs[i].id,
                         artist: artist_name,
@@ -181,7 +200,14 @@ class SearchContainer extends Component {
                         url: global.server_url + data.data.songs[i].audio,
                         artwork: global.server_url + data.data.songs[i].img,
                         db_id: data.data.songs[i].id,
-                        category: "song"
+                        category: "song",
+                        down_count: data.data.songs[i].downCount,
+                        price: data.data.songs[i].price,
+                        downloading: false,
+                        album_id: album_id,
+                        artist_id: artist_id,
+                        playlist_id: playlist_id,
+                        purchase_status: purchase_status, // if user already purchase this song then true, else false
                     });
                 }
 
@@ -245,7 +271,7 @@ class SearchContainer extends Component {
             Alert.alert('Waves!', error.message);
         });
         
-        this.setState({showIndicator: false});
+        
     }
 
     componentDidMount(){
@@ -350,10 +376,39 @@ class SearchContainer extends Component {
 
     onPress = async item =>{
         if(item.category == "song") {
-            await TrackPlayer.reset();
+            if(!item.purchase_status) {
+                if(global.credit_status) {
+                    Alert.alert("Waves", "You need to purchase " + item.price +"$ to play this song. Would you like to purchase?",
+                    [
+                        {text: 'Cancel', onPress: null},
+                        {text: 'OK', onPress: () => {
+                            purchase_song(item)
+                        }
+                        }
+                    ],
+                    { cancelable: true }
+                    );
+                    
+                } else {
+                    Alert.alert("Waves", "This song is paid. Please register your credit card in Setting.");
+                }
+                return;
+            }
 
+            await TrackPlayer.reset();
             var track_list = Object.assign([], this.state.items[0].data);
+            for(i = 0; i < track_list.length; i ++) {
+                if(!track_list[i].purchase_status) {
+                    track_list.splice(i, 1);
+                }
+            }
             await TrackPlayer.add(track_list);
+            for(i = 0; i < track_list.length; i ++) {
+                if(item.id == track_list[i].id) {
+                    await TrackPlayer.skip(String(track_list[i].id));
+                    break;
+                }
+            }
             await TrackPlayer.skip(String(item.id));
             await TrackPlayer.play()
         } else if(item.category == "artist") {
@@ -385,19 +440,19 @@ class SearchContainer extends Component {
     
     onHandleSeeAll = item => {
         if (item === CONSTANT_SEEL_ALL.SONGS) {
-        this.props.navigation.navigate('Music', {
+            this.props.navigation.navigate('Music', {
                 title: item
             })
         } else if (item === CONSTANT_SEEL_ALL.ARTISTS) {
-        this.props.navigation.navigate('Artists', {
+            this.props.navigation.navigate('Artists', {
                 title: item
             })
         } else if (item === CONSTANT_SEEL_ALL.PLAYLISTS) {
-        this.props.navigation.navigate('Playlists', {
+            this.props.navigation.navigate('Playlists', {
                 title: item
             })
         } else {
-        this.props.navigation.navigate('Albums', {
+            this.props.navigation.navigate('Albums', {
                 title: item
             })
         }

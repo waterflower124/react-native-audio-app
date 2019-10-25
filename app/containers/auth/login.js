@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-community/async-storage';
 
 import { STYLES, COLORS, FONTS} from '../../themes'
 import global from '../../global/global';
+import { BaseManager } from '../../database'
 
 var deviceWidth = Dimensions.get('window').width;
 var deviceHeight = Dimensions.get('window').height;
@@ -52,6 +53,7 @@ class LoginContainer extends Component {
     }
 
     async UNSAFE_componentWillMount() {
+        
     }
 
     signin = async() => {
@@ -83,7 +85,7 @@ class LoginContainer extends Component {
             const error_code = data.error.code;
             if(error_code == 402) {
                 Alert.alert("Waves!", 'Your account is disabled!');
-            } else if(error_code == 404 && error_code == 405) {
+            } else if(error_code == 404 || error_code == 405) {
                 Alert.alert("Waves!", 'Email or Password is incorrect!');
             } else if(error_code == 200) {
                 global.email = this.state.email;
@@ -92,7 +94,20 @@ class LoginContainer extends Component {
                 global.country = data.data.country;
                 global.gender = data.data.gender;
                 global.birthday = data.data.dob;
-                global.avatar_url = global.server_url + data.data.avatar_url;
+                global.phone_number = data.data.phone;
+                if(data.data.avatar_url == "") {
+                    global.avatar_url = "";
+                } else {
+                    global.avatar_url = global.server_url + data.data.avatar_url;
+                }
+                if(data.data.billings != null) {
+                    global.credit_status = true;
+                    global.card_number = data.data.billings.cardnum;
+                    global.credit_expiry = data.data.billings.expiredate;
+                    global.credit_cvc = data.data.billings.cvc;
+                } else {
+                    global.credit_status = false;
+                }
                 global.token = data.data.token;
 
                 try {
