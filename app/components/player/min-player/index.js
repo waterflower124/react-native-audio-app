@@ -1,16 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity,Platform, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity,Platform, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { BlurView } from "@react-native-community/blur";
 import ImageBoxView from '../../image/imageBoxView';
 import styles from './style';
 import IconComponent from 'react-native-vector-icons/FontAwesome5'
+
+const height = Dimensions.get('window').height;
+const width = Dimensions.get('window').width;
 
 const MinPlayerComponent = props => (
     
     { ...Platform.OS === 'android' ? <TouchableWithoutFeedback onPress={() => props.onPress(props.item)} >
         <View style={styles.container}>  
             <View>
-                <View activeOpacity={0.8} onPress={() => props.onPress(props.item)}> 
+                <View activeOpacity={0.8} > 
                 {
                     props.track_artwork == "" &&
                     <ImageBoxView
@@ -48,7 +51,7 @@ const MinPlayerComponent = props => (
         </View>
         </TouchableWithoutFeedback>  : <TouchableWithoutFeedback onPress={() => props.onPress(props.item)} >
         <View style={styles.container}>
-        <View>
+        <View style = {styles.image_view}>
             <View activeOpacity={0.8}> 
             {
                 props.track_artwork == "" &&
@@ -71,7 +74,7 @@ const MinPlayerComponent = props => (
             </View>
         </View>
         <View style={styles.actions}>
-            <View>
+            <View style = {styles.text_view}>
                 <Text style={styles.title} numberOfLines={1}>{props.track_title == "" ? "No Music" : props.track_title}</Text>
                 <Text style={styles.name} numberOfLines={1}>{props.track_artist == "" ? "No Artist" : props.track_artist}</Text>
              </View>

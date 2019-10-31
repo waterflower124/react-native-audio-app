@@ -25,6 +25,7 @@ const styles = {
         iconDotDot: {
             marginRight: 20,
             color: COLORS.text.white,
+            margin: 10
         },
     },
     picture: {

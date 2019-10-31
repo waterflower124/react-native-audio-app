@@ -124,7 +124,7 @@ class LoginContainer extends Component {
             }
         })
         .catch(function(error) {
-            Alert.alert('Waves!', 'Network error.');
+            Alert.alert('Waves!', "Network error");
         });
         
         this.setState({showIndicator: false});

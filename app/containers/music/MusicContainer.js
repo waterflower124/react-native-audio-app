@@ -162,7 +162,7 @@ class MusicContainer extends Component {
             }
         })
         .catch(function(error) {
-            Alert.alert('Waves!', error.message);
+            Alert.alert('Waves', "Network error");
         });
         
         this.setState({showIndicator: false});
@@ -401,6 +401,9 @@ class MusicContainer extends Component {
                     const j = Math.floor(Math.random() * (i + 1));
                     [track_list[i], track_list[j]] = [track_list[j], track_list[i]];
                 }
+                this.setState({
+                    items: track_list
+                })
                 await TrackPlayer.add(track_list);
                 await TrackPlayer.play();
                 this.setState({

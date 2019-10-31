@@ -26,6 +26,12 @@ const MusicVerticalComponent = props => (
             <IconFeather name="lock" size={18} style={styles.actionIcon.iconDotDot} />
         </View>
     }
+    {
+        props.parent == "user-playlist" &&
+        <TouchableOpacity activeOpacity={0.8} style={styles.actionIcon} onPress = {() => props.onDeletePress(props.item)}>
+            <IconFeather name="trash-2" size={18} style={styles.actionIcon.iconDotDot} />
+        </TouchableOpacity>
+    }
         {/* <View style={styles.actionIcon}>
             <TouchableOpacity activeOpacity={0.8} onPress = {() => props.onPressDownload(props.item)}>
                 {

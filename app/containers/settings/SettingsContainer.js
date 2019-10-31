@@ -260,6 +260,7 @@ class SettingsContainer extends Component {
                     } catch(error) {
                         console.log(error.message);
                     }
+                    await TrackPlayer.stop();
                     this.props.navigation.navigate('AuthStack')}
                 }
             ],

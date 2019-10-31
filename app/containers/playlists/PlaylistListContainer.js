@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { FlatList, SafeAreaView, ScrollView, View, TouchableOpacity } from 'react-native';
+import { FlatList, SafeAreaView, ScrollView, View, TouchableOpacity, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Entypo'
 import { SearchBar } from 'react-native-elements';
 
@@ -243,6 +243,46 @@ class PlaylistListContainer extends Component {
         })
     }
 
+    onLongPress = item => {
+        if(this.props.navigation.state.params.prev) {
+            if(this.props.navigation.state.params.prev == "userplaylist") {
+                Alert.alert("Waves", "Are you sure want to delete this PlayList?",
+                [
+                    {text: 'Cancel', onPress: null},
+                    {text: 'OK', onPress: async() => {
+                        var current_song_exist = false;
+                        var music_list = [];
+                        const currentTrackID = await TrackPlayer.getCurrentTrack();
+                        await global.dbManager.getPlaylistSongs(item.id)
+                        .then((values) => {
+                            music_list = values;
+                            for(i = 0; values.length; i ++) {
+                                if(values[i].song_id == currentTrackID) {
+                                    current_song_exist = true;
+                                    break;
+                                }
+                            }
+                        }).catch((error) => {
+                            this.setState({showIndicator: false});
+                        })
+
+                        if(current_song_exist) {
+                            await TrackPlayer.reset();
+                        }
+                        for(i = 0; i < music_list.length; i ++) {
+                            await global.dbManager.removeSongFromTable(music_list[i].id);
+                        }
+
+                        await global.dbManager.removePlaylistFromTable(item.id);
+
+                    }}
+                ],
+                { cancelable: true }
+                )
+            }
+        }
+    }
+
     updateSearch = search => {
         this.setState({ search });
         var items = [];
@@ -346,6 +386,7 @@ class PlaylistListContainer extends Component {
                                 lastIndex={items.length - 1}
                                 item={item}
                                 onPress={this.onPress}
+                                onLongPress = {this.onLongPress}
                             />
                         )}
                         numColumns={2}

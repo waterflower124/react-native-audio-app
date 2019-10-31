@@ -6,7 +6,7 @@ import styles from './style.vertical';
 const PlaylistVerticalComponent = props => (
     <View style={[styles.container, props.index % 2 == 0 ?
         { marginLeft: 15, marginRight: 15, } : { marginRight: 15, marginLeft: 15 }]}>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => props.onPress(props.item)}>
+        <TouchableOpacity activeOpacity={0.8} onPress={() => props.onPress(props.item)} onLongPress = {() => props.onLongPress(props.item)} delayLongPress = {1000}>
             <ImageBoxView
                 customStyle={styles.largePicture}
                 isEmptyGrayBox

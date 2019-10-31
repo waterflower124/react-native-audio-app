@@ -10,7 +10,7 @@ import ImageBoxView from '../../components/image/imageBoxView';
 import { STYLES, COLORS, FONTS } from '../../themes'
 import styles from './styles'
 
-import TrackPlayer, {STATE_PLAYING, STATE_PAUSED, STATE_BUFFERING, STATE_NONE, STATE_READY, STATE_STOPPED} from 'react-native-track-player';
+import TrackPlayer, {STATE_PLAYING, STATE_PAUSED, STATE_BUFFERING, STATE_NONE, STATE_READY, STATE_STOPPED, removeUpcomingTracks} from 'react-native-track-player';
 import global from '../../global/global';
 import { SkypeIndicator } from 'react-native-indicators';
 import strings from '../../localization/strings';
@@ -193,7 +193,7 @@ class PlaylistContainer extends Component {
                             title: values[i].title,
                             url: values[i].url,
                             artwork: values[i].artwork,
-                            db_id: values[i].song_id,
+                            db_id: values[i].id,
                             down_count: 0,
                             price: 0,
                             downloading: false,
@@ -359,6 +359,9 @@ class PlaylistContainer extends Component {
                     const j = Math.floor(Math.random() * (i + 1));
                     [track_list[i], track_list[j]] = [track_list[j], track_list[i]];
                 }
+                this.setState({
+                    items: track_list
+                })
                 await TrackPlayer.add(track_list);
                 await TrackPlayer.play();
                 this.setState({
@@ -420,6 +423,38 @@ class PlaylistContainer extends Component {
         await TrackPlayer.add(track_list);
         await TrackPlayer.skip(String(item.id));
         await TrackPlayer.play();
+    }
+
+    onDeletePress = async item => {
+        const currentTrackID = await TrackPlayer.getCurrentTrack();
+        if(currentTrackID == item.id) {
+            Alert.alert("Waves", "This song is playing now. Please select another song.");
+            return;
+        }
+        Alert.alert("Waves", "Are you sure want to delete this song?",
+        [
+            {text: 'Cancel', onPress: null},
+            {text: 'OK', onPress: async() => {
+                await global.dbManager.removeSongFromTable(item.db_id)
+                .then(async(value) => {
+                    await TrackPlayer.remove(item.id);
+                    var items = this.state.items;
+                    for(i = 0; i < items.length; i ++) {
+                        if(items[i].id == item.id) {
+                            items.splice(i, 1);
+                            break;
+                        }
+                    }
+                    this.setState({
+                        items: items
+                    });
+                }).catch((error) => {
+
+                })
+            }}
+        ],
+        { cancelable: true }
+        )
     }
 
     onHandlePlayer = async items => {
@@ -540,6 +575,8 @@ class PlaylistContainer extends Component {
                                 lastIndex={items.length - 1}
                                 item={item}
                                 onPress={this.onPress}
+                                parent = {"user-playlist"}
+                                onDeletePress = {this.onDeletePress}
                             />
                         )}
                     />

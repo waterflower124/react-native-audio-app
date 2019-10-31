@@ -1,4 +1,9 @@
 import { COLORS, METRICS, FONTS } from '../../../themes';
+import { Dimensions } from 'react-native';
+
+const height = Dimensions.get('window').height;
+const width = Dimensions.get('window').width;
+
 
 const styles = {
     container: {
@@ -14,15 +19,28 @@ const styles = {
         // backgroundColor: COLORS.backgroundColor,
         backgroundColor: '#1a1a1a'
     },
+    image_view: {
+        width: 50, 
+        height: 50
+    },
     actions:{
-        flex: 1,
-        marginLeft: 10,
+        width: width - 50,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        // justifyContent: 'space-between',
+    },
+    text_view: {
+        width: width - 50 - 100,
+        height: 50,
+        paddingLeft: 10,
+        justifyContent: 'center'
     },
     actionsRight:{
         flexDirection: 'row',
+        width: 100,
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     picture:{
         width: 50,

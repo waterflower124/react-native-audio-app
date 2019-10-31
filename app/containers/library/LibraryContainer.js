@@ -28,6 +28,32 @@ class LibraryContainer extends Component {
     
 
     async UNSAFE_componentWillMount() {
+
+        ///////////////  setup player  //////////
+        await TrackPlayer.setupPlayer().then(async() => {
+            // await TrackPlayer.registerPlaybackService(() => require('../../player-service/service.js'));
+        
+            TrackPlayer.updateOptions({
+                stopWithApp: true,
+                capabilities: [
+                  TrackPlayer.CAPABILITY_PLAY,
+                  TrackPlayer.CAPABILITY_PAUSE,
+                  TrackPlayer.CAPABILITY_SKIP_TO_NEXT,
+                  TrackPlayer.CAPABILITY_SKIP_TO_PREVIOUS,
+                  TrackPlayer.CAPABILITY_STOP,
+                  TrackPlayer.CAPABILITY_PLAY_FROM_ID
+                ],
+                compactCapabilities: [
+                    TrackPlayer.CAPABILITY_PLAY,
+                    TrackPlayer.CAPABILITY_PAUSE,
+                    TrackPlayer.CAPABILITY_SKIP_TO_NEXT,
+                    TrackPlayer.CAPABILITY_SKIP_TO_PREVIOUS,
+                    TrackPlayer.CAPABILITY_STOP,
+                    TrackPlayer.CAPABILITY_PLAY_FROM_ID
+                ]
+              });
+        });
+
         // global.dbManager = new BaseManager();
         await global.dbManager.createPlaylistTable().then((value) => {
             console.log("/////////")
