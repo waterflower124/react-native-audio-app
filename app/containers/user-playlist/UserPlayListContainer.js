@@ -261,7 +261,7 @@ class UserPlaylistContainer extends Component {
         .then((values) => {
             var items = [];
             for(i = 0; i < values.length; i ++) {
-                if(values[i].playlist_id == 0) {
+                if(values[i].playlist_id == "0") {
                     var item = {
                         id: values[i].id,
                         artist: values[i].artist,
@@ -350,18 +350,18 @@ class UserPlaylistContainer extends Component {
                     success = false;
                     console.log(err.message)
                 });
-                // await RNFS.readFile(this.state.new_playlist_pic_url, 'base64')
-                // .then(res =>{
-                //     this.setState({resBase64:res})
-                //     let base64 = res
-                //     RNFS.writeFile("file://" + downloadDest_pic,base64,'base64')
-                //     .then(() => {
-                //         console.log("trurururururur")
-                //     })
-                //     .catch((error) => {
-                //         console.log("err",error);
-                //     });
-                // });
+                await RNFS.readFile(this.state.new_playlist_pic_url, 'base64')
+                .then(res =>{
+                    this.setState({resBase64:res})
+                    let base64 = res
+                    RNFS.writeFile("file://" + downloadDest_pic,base64,'base64')
+                    .then(() => {
+                        console.log("trurururururur")
+                    })
+                    .catch((error) => {
+                        console.log("err",error);
+                    });
+                });
 
             } else {
                 Alert.alert("Waves", "Please select PlayList picture");

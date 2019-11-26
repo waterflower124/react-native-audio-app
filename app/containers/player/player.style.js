@@ -12,13 +12,14 @@ const styles = {
     actionTitle: {
         flex: 1,
         marginLeft: 10,
+        marginRight: 10,
         justifyContent: 'center',
     },
     actionIcon: {
         alignItems: 'stretch',
         justifyContent: 'center',
         iconDotDot: {
-            marginRight: 20,
+            marginRight: 10,
             color: COLORS.text.white,
         },
     },

@@ -120,7 +120,7 @@ export class BaseManager {
     removeSongFromTable(id) {
         return new Promise((resolve, reject) => {
             this.dbInstance.executeSql(
-                "DELETE FROM Song_Table WHERE id = (?)", [id]
+                "DELETE FROM Song_Table WHERE id = ?", [id]
             ).then((values) => {
                 resolve(true)
             }).catch((err) => {

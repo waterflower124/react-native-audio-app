@@ -290,25 +290,25 @@ class PlayerContainer extends Component {
 
             const currentTrackID = await TrackPlayer.getCurrentTrack();
             const currentTrack = await TrackPlayer.getTrack(currentTrackID);
-            // global.dbManager.updateSongFromTable(currentTrackID, this.state.selected_playlist.id)
-            // .then((value) => {
-            //     console.log("change db sucess")
-            // }).catch((error) => {
-            //     console.log("change db fail")
-            // })
-            // this.setState({
-            //     show_addsong_modal: false, 
-            // })
-            ///////  add song to sqlite  ////////
-            await global.dbManager.addSongToTable(currentTrack.title, currentTrack.artist, currentTrack.url, currentTrack.artwork, currentTrack.id, this.state.selected_playlist.id)
+            global.dbManager.updateSongFromTable(currentTrackID, this.state.selected_playlist.id)
             .then((value) => {
-                console.log("add song to sql is successed")
+                console.log("change db sucess")
             }).catch((error) => {
-                console.log("add song to sql is failed")
+                console.log("change db fail")
             })
             this.setState({
                 show_addsong_modal: false, 
             })
+            ///////  add song to sqlite  ////////
+            // await global.dbManager.addSongToTable(currentTrack.title, currentTrack.artist, currentTrack.url, currentTrack.artwork, currentTrack.id, this.state.selected_playlist.id)
+            // .then((value) => {
+            //     console.log("add song to sql is successed")
+            // }).catch((error) => {
+            //     console.log("add song to sql is failed")
+            // })
+            // this.setState({
+            //     show_addsong_modal: false, 
+            // })
         }
     }
 
@@ -359,7 +359,7 @@ class PlayerContainer extends Component {
         });
 
         ///////  add song to sqlite  ////////
-        await global.dbManager.addSongToTable(track_item.title, track_item.artist, "file://" + downloadDest_audio, downloadDest_pic, track_item.id)
+        await global.dbManager.addSongToTable(track_item.title, track_item.artist, "file://" + downloadDest_audio, downloadDest_pic, track_item.id, "0")
         .then((value) => {
             console.log("add song to sql is successed")
         }).catch((error) => {
@@ -420,21 +420,21 @@ class PlayerContainer extends Component {
 
 
 
-        // if(this.state.downloading) {
-        //     return;
-        // }
-        // const currentTrackID = await TrackPlayer.getCurrentTrack();
-        // var items = this.state.items;
-        // var track_item = null
-        // for(i = 0; i < items.length; i ++) {
-        //     if(currentTrackID == items[i].id) {
-        //         track_item = items[i];
-        //         break;
-        //     }
-        // }
-        // if(track_item != null) {
-        //     this.download_music(track_item);
-        // }
+        if(this.state.downloading) {
+            return;
+        }
+        const currentTrackID = await TrackPlayer.getCurrentTrack();
+        var items = this.state.items;
+        var track_item = null
+        for(i = 0; i < items.length; i ++) {
+            if(currentTrackID == items[i].id) {
+                track_item = items[i];
+                break;
+            }
+        }
+        if(track_item != null) {
+            this.download_music(track_item);
+        }
     }
 
     add_song_to_playlist = async() => {
@@ -449,10 +449,10 @@ class PlayerContainer extends Component {
             }
         }).catch((error) => {
         })
-        // if(!song_exist) {
-        //     Alert.alert("Waves", "Please download this music first.");
-        //     return;
-        // }
+        if(!song_exist) {
+            Alert.alert("Waves", "Please download this music first.");
+            return;
+        }
         if(this.state.playlist_list.length == 0) {
             Alert.alert("Waves", "Please create a Playlist at PlayList.");
             return;
@@ -624,14 +624,14 @@ class PlayerContainer extends Component {
                         <View style={[styles.buttonContainer]}>
                             <TouchableOpacity style = {{width: 25}} onPress={() => this.onHandleToggleBttom()}>
                                 {/* <IconFeather name={isHidden ? "align-center" : "x-square"} size={25} color={COLORS.text.white} /> */}
-                            {/* {
+                            {
                                 this.state.downloading &&
                                 <SkypeIndicator style = {{}} size = {25} color = '#ffffff' />
                             }
                             {
                                 !this.state.downloading &&
                                 <IconFeather name={"download"} size={25} color={COLORS.text.white} />
-                            } */}
+                            }
                             </TouchableOpacity>
                             <View style={styles.rewindPlayFastContainer}>
                                 <TouchableOpacity onPress = {() => this.music_previous_button_func()}>

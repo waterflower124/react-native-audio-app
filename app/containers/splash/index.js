@@ -83,6 +83,8 @@ export default class SplashContainer extends Component {
                     let email = await AsyncStorage.getItem("email");
                     let password = await AsyncStorage.getItem("password");
 
+                    console.log(email + "  " + password);
+
                     this.setState({showIndicator: true});
                     await fetch(global.server_url + '/api/auth/login', {
                         method: 'POST',
