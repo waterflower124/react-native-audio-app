@@ -328,8 +328,8 @@ class PlayerContainer extends Component {
 
         let audio_filename = track_item.url.split('/').pop();
         let pic_filename = track_item.artwork.split('/').pop();
-        const downloadDest_audio = `${RNFS.CachesDirectoryPath}/${global.audio_dir}/${audio_filename}`;
-        const downloadDest_pic = `${RNFS.CachesDirectoryPath}/${global.picture_dir}/${pic_filename}`;
+        const downloadDest_audio = `${RNFS.LibraryDirectoryPath}/${global.audio_dir}/${audio_filename}`;
+        const downloadDest_pic = `${RNFS.LibraryDirectoryPath}/${global.picture_dir}/${pic_filename}`;
     
         const progress = data => {
             const percentage = ((100 * data.bytesWritten) / data.contentLength) | 0;

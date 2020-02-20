@@ -202,6 +202,7 @@ class PlaylistContainer extends Component {
                             playlist_id: values[i].playlist_id,
                             purchase_status: true, // if user already purchase this song then true, else false
                         });
+                        console.log("+++++" + values[i].url)
                     }
                     
                     this.setState({

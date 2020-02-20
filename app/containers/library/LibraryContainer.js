@@ -68,8 +68,8 @@ class LibraryContainer extends Component {
         });
 
 
-        const dir_audio_path = `${RNFS.CachesDirectoryPath}/${global.picture_dir}`;
-        const dir_pic_path = `${RNFS.CachesDirectoryPath}/${global.picture_dir}`;
+        const dir_audio_path = `${RNFS.LibraryDirectoryPath}/${global.picture_dir}`;
+        const dir_pic_path = `${RNFS.LibraryDirectoryPath}/${global.picture_dir}`;
         await RNFS.mkdir(dir_audio_path)
         .then((result) => {
             console.log('result', result)

@@ -250,6 +250,7 @@ class UserPlaylistContainer extends Component {
                 }
                 playlists.push(playlist);
             }
+            console.log(playlist)
             this.setState({
                 playlists: playlists
             })
@@ -327,7 +328,7 @@ class UserPlaylistContainer extends Component {
             if(this.state.new_playlist_pic_url != "") {
             
                 let pic_filename = Date.now()
-                const downloadDest_pic = `${RNFS.CachesDirectoryPath}/${global.picture_dir}/${pic_filename}.png`;
+                const downloadDest_pic = `${RNFS.MainBundlePath}/${global.picture_dir}/${pic_filename}.png`;
             
                 const progress = data => {
                     const percentage = ((100 * data.bytesWritten) / data.contentLength) | 0;
